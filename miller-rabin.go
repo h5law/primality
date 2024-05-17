@@ -120,7 +120,8 @@ func MillerRabin(n *big.Int, reps int, force2 bool) bool {
 	one := big.NewInt(1)
 	even := new(big.Int)
 	even = even.And(n, one)
-	if n.Cmp(two) <= 0 || even.Cmp(zero) == 0 {
+	lt := n.Cmp(two)
+	if lt < 0 || (lt != 0 && even.Cmp(zero) == 0) {
 		return false
 	}
 	// Get prime bitmask for primes between 2-2^16
