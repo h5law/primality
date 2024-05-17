@@ -181,6 +181,11 @@ func polynomialSubtraction(p1, p2 []int) []int {
 // AKS is an implementation of the AKS deterministic primality test.
 // Step 5 takes up the majority of the time and as such results in a slow test.
 func AKS(n int) bool {
+	// Initial check
+	if n < 2 {
+		return false
+	}
+
 	// Step 1
 	composite := basePowerCheck(n)
 	if composite {
