@@ -166,7 +166,7 @@ func polynomialSubtraction(p1, p2 []int) []int {
 	return res
 }
 
-// AKS is an implementation of the AKS deterministic primality test. 
+// AKS is an implementation of the AKS deterministic primality test.
 func AKS(n uint64) bool {
 	// Step 1
 	composite := basePowerCheck(n)
