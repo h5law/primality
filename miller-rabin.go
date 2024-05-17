@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"math/rand"
 	"slices"
-	"sync"
 	"time"
 )
 
@@ -151,11 +150,9 @@ func MillerRabin(n *big.Int, reps int, force2 bool) bool {
 	for i := 0; i < reps; i++ {
 		// n is always a probable prime to base 1 and n-1
 		a = a.Rand(rand, nm4).Add(a, big.NewInt(int64(2))) // random(2, n-2)
-		sync.OnceFunc(func() {
-			if force2 {
-				a = two
-			}
-		})()
+		if force2 && i == reps-1 {
+			a = two // force base of 2 on final repetition if required
+		}
 		x := bigPowMod(a, d, n)
 		for j := uint(0); j < s; j++ {
 			y = bigPowMod(x, two, n)
