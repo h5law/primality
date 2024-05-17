@@ -6,7 +6,7 @@ import (
 )
 
 // Check n != a^b for a,b > 1, returning true if it is otherwise false if not.
-func basePowerCheck(n uint64) bool {
+func basePowerCheck(n int) bool {
 	for i := 2.0; i < math.Log2(float64(n)); i++ {
 		a := math.Pow(float64(n), 1.0/float64(i))
 		// Check if the rounded value a is equal to its integer value.
@@ -18,7 +18,7 @@ func basePowerCheck(n uint64) bool {
 }
 
 // Find the order such that Ord_r(n) > (log_2(n))^2
-func findCorrectOrder(n uint64) uint64 {
+func findCorrectOrder(n int) int {
 	maxK := math.Floor(math.Pow(math.Log2(float64(n)), 2))
 	maxR := max(3.0, math.Ceil(math.Pow(math.Log2(float64(n)), 5)))
 	nextR := true
@@ -30,11 +30,11 @@ func findCorrectOrder(n uint64) uint64 {
 				math.Mod(math.Pow(float64(n), j), i) == 0
 		}
 	}
-	return uint64(i - 1.0)
+	return int(i - 1.0)
 }
 
 // gcd finds the greatest common divisor of a and b
-func gcd(a, b uint64) uint64 {
+func gcd(a, b int) int {
 	for a != b {
 		if a > b {
 			a -= b
@@ -47,7 +47,7 @@ func gcd(a, b uint64) uint64 {
 
 // gcdChecker returns false when the gcd of all values [2, r] and n aren't
 // coprime otherwise it returns true - meaning the n is a composite number
-func gcdChecker(n, r uint64) bool {
+func gcdChecker(n, r int) bool {
 	// Check all the gcd values in the interval [2, Ord_r(n)]
 	for i := r; i > 1; i-- {
 		d := gcd(i, n)
@@ -60,10 +60,10 @@ func gcdChecker(n, r uint64) bool {
 }
 
 // eulerTotient is an implementation of Euler's Totient function
-func eulerTotient(n uint64) uint64 {
+func eulerTotient(n int) int {
 	res := n // Initialize result as n
 	// Check up to the square root of n for factors of n
-	for p := uint64(2); p*p <= n; p++ {
+	for p := 2; p*p <= n; p++ {
 		if n%p == 0 {
 			for n%p == 0 {
 				n /= p // remove all factors p from n
@@ -116,6 +116,9 @@ func polynomialExpansion(e, a int) []int {
 	return c[e-1]
 }
 
+// degree determines the degree of the polynomial p
+//
+//	Ref: https://rosettacode.org/wiki/Polynomial_long_division#Go
 func degree(p []int) int {
 	for d := len(p) - 1; d >= 0; d-- {
 		if p[d] != 0 {
@@ -125,6 +128,10 @@ func degree(p []int) int {
 	return -1
 }
 
+// pld performs polynomial long division on the two polynomial coefficient slices
+// provided. It expects the polynomials to be in ascending order of powers of x.
+//
+//	Ref: https://rosettacode.org/wiki/Polynomial_long_division#Go
 func pld(nn, dd []int) (q, r []int, ok bool) {
 	if degree(dd) < 0 {
 		return
@@ -145,7 +152,10 @@ func pld(nn, dd []int) (q, r []int, ok bool) {
 	return q, nn, true
 }
 
-func polynomialRemainder(p1, p2 []int, m int) []int {
+// polynomialModRemainder finds the remainder of polynomials p1/p2 and does a
+// term-wise reduction modulo m on the result, returning a slice of coefficients
+// for a polynomial in ascending order of x.
+func polynomialModRemainder(p1, p2 []int, m int) []int {
 	_, r, ok := pld(p1, p2)
 	if !ok {
 		return nil
@@ -153,6 +163,8 @@ func polynomialRemainder(p1, p2 []int, m int) []int {
 	return polynomialMod(r, m)
 }
 
+// polynomialSubtraction subtracts p1 from p2 in a term-wise fashion.
+// The function orders the polynomials longest first prior to subtraction.
 func polynomialSubtraction(p1, p2 []int) []int {
 	longest, shortest := p1, p2
 	if len(p2) > len(p2) {
@@ -167,7 +179,8 @@ func polynomialSubtraction(p1, p2 []int) []int {
 }
 
 // AKS is an implementation of the AKS deterministic primality test.
-func AKS(n uint64) bool {
+// Step 5 takes up the majority of the time and as such results in a slow test.
+func AKS(n int) bool {
 	// Step 1
 	composite := basePowerCheck(n)
 	if composite {
@@ -195,12 +208,12 @@ func AKS(n uint64) bool {
 		),
 	)
 	for a := 1; a <= maxA; a++ {
-		xa := polynomialExpansion(int(n), a)
-		xna := polynomialExpansion(int(n), 1)
+		xa := polynomialExpansion(n, a)
+		xna := polynomialExpansion(n, 1)
 		xna[0] += a
-		xr1 := polynomialExpansion(int(r), 1)
+		xr1 := polynomialExpansion(r, 1)
 		xr1[0]--
-		remA := polynomialRemainder(xa, xr1, int(n))
+		remA := polynomialModRemainder(xa, xr1, n)
 		_, remB, ok := pld(xna, xr1)
 		if !ok {
 			panic("error dividing polynomials")
