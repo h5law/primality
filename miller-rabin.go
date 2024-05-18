@@ -9,6 +9,7 @@ import (
 var zero = big.NewInt(0)
 var one = big.NewInt(1)
 var two = big.NewInt(2)
+var primeMask = primemask(2, 2<<16)
 
 // MillerRabin is an implementation of the Miller-Rabin primality test, it is
 // a probabilistic method - and as such using 25 repetitions/rounds is
@@ -26,12 +27,11 @@ func MillerRabin(n *big.Int, reps int, force2 bool) bool {
 	}
 	// Get prime bitmask for primes between 2-2^16
 	if n.Cmp(big.NewInt(2<<16)) <= 0 {
-		primeBitmask := primemask(2, 2<<16)
-		// Check that primeBitmask&(1<<n) != 0 -> n == prime
+		// Check that primeMask&(1<<n) != 0 -> n == prime
 		shift := big.NewInt(1)
 		shift = shift.Lsh(shift, uint(n.Uint64()))
 		prime := new(big.Int)
-		prime = prime.And(primeBitmask, shift)
+		prime = prime.And(primeMask, shift)
 		return prime.Cmp(zero) != 0
 	}
 	// Create offset values
