@@ -25,9 +25,9 @@ func findCorrectOrder(n int) int {
 	i := 2.0
 	for i = 2.0; nextR && i < maxR; i++ {
 		nextR = false
-		for j := 1.0; !nextR && j <= maxK; j++ {
-			nextR = math.Mod(math.Pow(float64(n), j), i) == 1 ||
-				math.Mod(math.Pow(float64(n), j), i) == 0
+		for j := 1; !nextR && j <= int(maxK); j++ {
+			nextR = math.Mod(float64(fastPower(n, j)), i) == 1 ||
+				math.Mod(float64(fastPower(n, j)), i) == 0
 		}
 	}
 	return int(i - 1.0)
@@ -91,29 +91,34 @@ func polynomialMod(p []int, m int) []int {
 	return r
 }
 
+// fastPower computes b^e fast
+func fastPower(b int, e int) int {
+	r := 1
+	for e > 0 {
+		if e%2 == 1 {
+			r *= b
+		}
+		b *= b
+		e >>= 1
+	}
+	return r
+}
+
 // polynomialExpansion finds the coefficients of the polynomial expansion of
 // (x+a)^e and returns the coefficients in ascending powers of x from x = 0
 func polynomialExpansion(e, a int) []int {
-	c := make([][]int, e)
-	for i := range c {
-		c[i] = make([]int, i+2)
+	c := make([]int, e+1)
+	c[0], c[e] = 1, 1
+	for i := 0; i < int(e/2); i++ {
+		x := c[i] * (e - i) / (i + 1)
+		c[i+1], c[e-1-i] = x, x
 	}
-	for n := 0; n < e; n++ {
-		c[n][0] = 1
-		c[n][len(c[n])-1] = 1
-	}
-	for n := 1; n < e; n++ {
-		for k := 1; k < len(c[n]); k++ {
-			if k > n {
-				break
-			}
-			c[n][k] = (c[n-1][k-1] + c[n-1][k])
+	if a != 0 {
+		for i := range c {
+			c[i] *= fastPower(a, e-i)
 		}
 	}
-	for i, x := range c[e-1] {
-		c[e-1][i] = x * int(math.Pow(float64(a), float64(e-i)))
-	}
-	return c[e-1]
+	return c
 }
 
 // degree determines the degree of the polynomial p
@@ -133,20 +138,23 @@ func degree(p []int) int {
 //
 //	Ref: https://rosettacode.org/wiki/Polynomial_long_division#Go
 func pld(nn, dd []int) (q, r []int, ok bool) {
-	if degree(dd) < 0 {
+	dnn := degree(nn)
+	ddd := degree(dd)
+	if ddd < 0 {
 		return
 	}
 	nn = append(r, nn...)
-	if degree(nn) >= degree(dd) {
-		q = make([]int, degree(nn)-degree(dd)+1)
-		for degree(nn) >= degree(dd) {
-			d := make([]int, degree(nn)+1)
-			copy(d[degree(nn)-degree(dd):], dd)
-			q[degree(nn)-degree(dd)] = nn[degree(nn)] / d[degree(d)]
+	if dnn >= ddd {
+		q = make([]int, dnn-ddd+1)
+		for dnn >= ddd {
+			d := make([]int, dnn+1)
+			copy(d[dnn-ddd:], dd)
+			q[dnn-ddd] = nn[dnn] / d[degree((d))]
 			for i := range d {
-				d[i] *= q[degree(nn)-degree(dd)]
+				d[i] *= q[dnn-ddd]
 				nn[i] -= d[i]
 			}
+			dnn = degree(nn)
 		}
 	}
 	return q, nn, true
@@ -181,8 +189,8 @@ func polynomialSubtraction(p1, p2 []int) []int {
 // AKS is an implementation of the AKS deterministic primality test.
 // Step 5 takes up the majority of the time and as such results in a slow test.
 func AKS(n int) bool {
-	// Initial check
-	if n < 2 {
+	// Initial check that n > 1 and not even (expect for 2 itself)
+	if n < 2 || (n > 2 && n&1 == 0) {
 		return false
 	}
 
@@ -212,17 +220,17 @@ func AKS(n int) bool {
 			(math.Log2(float64(n)) * math.Sqrt(float64(eulerTotient(r)))) + 0.5,
 		),
 	)
+	xna := polynomialExpansion(n, 0)
+	xr1 := polynomialExpansion(r, 0)
+	xr1[0]--
+	_, remB, ok := pld(xna, xr1)
+	if !ok {
+		panic("error dividing polynomials")
+	}
 	for a := 1; a <= maxA; a++ {
-		xa := polynomialExpansion(n, a)
-		xna := polynomialExpansion(n, 1)
 		xna[0] += a
-		xr1 := polynomialExpansion(r, 1)
-		xr1[0]--
+		xa := polynomialExpansion(n, a)
 		remA := polynomialModRemainder(xa, xr1, n)
-		_, remB, ok := pld(xna, xr1)
-		if !ok {
-			panic("error dividing polynomials")
-		}
 		longest := make([]int, len(remA))
 		if len(remB) > len(remA) {
 			longest = make([]int, len(remB))
