@@ -1,17 +1,17 @@
 package primality
 
 import (
-	"bytes"
 	"math/big"
+	"slices"
 )
 
 // Return new slice containing only the elements in a that are not in b.
 //
 //	d = {x : x ∈ a and x ∉ b}
-func difference(a, b []byte) []byte {
-	diff := make([]byte, 0, len(a))
+func difference(a, b []uint64) []uint64 {
+	diff := make([]uint64, 0, len(a))
 	for _, v := range a {
-		if found := bytes.Contains(b, []byte{v}); !found {
+		if found := slices.Contains(b, v); !found {
 			diff = append(diff, v)
 		}
 	}
@@ -21,8 +21,7 @@ func difference(a, b []byte) []byte {
 // Generate a bitmask for primes from lo->hi, the bitmask will index the primes
 // at their relative bit indexes for quick comparison and evaluation of primes.
 func primemask(lo, hi uint64) *big.Int {
-	low := make([]byte, lo)
-	high := make([]byte, hi)
+	var low, high []uint64
 	// Get primes 2->hi
 	high = SieveOfEratosthenes(hi)
 	// Only get lower limit primes if lo > 2
@@ -37,10 +36,8 @@ func primemask(lo, hi uint64) *big.Int {
 	for i := 0; i < len(diff); i++ {
 		prime := new(big.Int)
 		// Left shift
-		if diff[i] == 0x1 {
-			prime = prime.Lsh(one, uint(i))
-			mask = mask.Or(mask, prime)
-		}
+		prime = prime.Lsh(one, uint(diff[i]))
+		mask = mask.Or(mask, prime)
 	}
 	return mask
 }
