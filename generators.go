@@ -2,7 +2,7 @@ package primality
 
 // SieveOfEratosthenes is an implementation of the ancient sieve of Eratosthenes
 // to generate a list of primes up to the provided integer.
-func SieveOfEratosthenes(n uint64) []byte {
+func SieveOfEratosthenes(n uint64) []uint64 {
 	if n < 2 {
 		return nil // 1 is not prime
 	}
@@ -19,11 +19,11 @@ func SieveOfEratosthenes(n uint64) []byte {
 		}
 	}
 	// Initialise a slice to store the primes we generate
-	primes := make([]byte, n+1)
+	primes := make([]uint64, 0, n+1)
 	// Primes are remaining false values indexes
 	for i, v := range b {
 		if !v {
-			primes[i] = 0x1
+			primes = append(primes, uint64(i))
 		}
 	}
 	return primes
