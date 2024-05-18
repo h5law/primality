@@ -14,17 +14,21 @@ integers.
 ## Features
 
 ### Miller-Rabin:
+
 - Highly accurate probabilistic primality test
   - 25 rounds and force usage of base 2 recommended
 - Arbitrarily large integer support (`big.Int`)
 
 ### AKS
+
 - Deterministic primality test
   - Slow on larger integers
 - `int` support only
 
 ## TODOs
 
+- Fix false positives with AKS method
+- Add unit tests
 - Improve speed of the AKS method
   - Specifically step 5
 - Make the AKS method work on arbitrarily sized integers
