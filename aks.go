@@ -5,6 +5,36 @@ import (
 	"slices"
 )
 
+// fastPower computes b^e fast
+func fastPower(b, e int) int {
+	r := 1
+	for e > 0 {
+		if e%2 == 1 {
+			r *= b
+		}
+		b *= b
+		e >>= 1
+	}
+	return r
+}
+
+// fastPowerMod computes b^e mod m fast
+func fastPowerMod(b, e, m int) int {
+	r := 1
+	if e < 0 {
+		e = -e
+	}
+	for e > 0 {
+		if e%2 == 1 {
+			r *= b % m
+		}
+		b *= b % m
+		e >>= 1
+	}
+	return r
+
+}
+
 // Check n != a^b for a,b > 1, returning true if it is otherwise false if not.
 func basePowerCheck(n int) bool {
 	for i := 2.0; i < math.Log2(float64(n)); i++ {
@@ -17,17 +47,45 @@ func basePowerCheck(n int) bool {
 	return false
 }
 
-// Find the order such that Ord_r(n) > (log_2(n))^2
+// orderMod finds the order of coprimes a and r such that r^a % i = 1,
+// where i is the order found
+func orderMod(a, r int) int {
+	// Check if a and r are coprime
+	g := gcd(a, r)
+	if g != 1 {
+		return 0
+	}
+	// Find the order i such that r^a % i = 1
+	i := 1
+	for {
+		if fastPowerMod(a, i, r) == 1 {
+			return i
+		}
+		i++
+	}
+}
+
+// Find the smallest order such that Ord_r(n) > (log_2(n))^2
 func findCorrectOrder(n int) int {
-	maxK := math.Floor(math.Pow(math.Log2(float64(n)), 2))
-	maxR := max(3.0, math.Ceil(math.Pow(math.Log2(float64(n)), 5)))
+	// fn := float64(n)
+	// maxK := int(math.Floor(math.Log2(fn)*math.Log2(fn) + 0.5))
+	// r := 2
+	// for {
+	// 	if orderMod(n, r) > maxK {
+	// 		return r
+	// 	}
+	// 	r++
+	// }
+	fn := float64(n)
+	maxK := math.Floor(math.Log2(fn)*math.Log2(fn) + 0.5)
+	maxR := max(3.0, math.Pow(math.Log2(fn), 5))
 	nextR := true
-	i := 2.0
+	var i float64
 	for i = 2.0; nextR && i < maxR; i++ {
 		nextR = false
 		for j := 1; !nextR && j <= int(maxK); j++ {
-			nextR = math.Mod(float64(fastPower(n, j)), i) == 1 ||
-				math.Mod(float64(fastPower(n, j)), i) == 0
+			nextR = fastPowerMod(n, j, int(i)) == 1 ||
+				fastPowerMod(n, j, int(i)) == 0
 		}
 	}
 	return int(i - 1.0)
@@ -59,20 +117,16 @@ func gcdChecker(n, r int) bool {
 	return false
 }
 
-// eulerTotient is an implementation of Euler's Totient function
+// eulerTotient is an implementation of Euler's Totient function, which counts
+// the number of relatively prime numbers to n, in the interval [0, sqrt(n)]
 func eulerTotient(n int) int {
-	res := n // Initialize result as n
-	// Check up to the square root of n for factors of n
-	for p := 2; p*p <= n; p++ {
-		if n%p == 0 {
-			for n%p == 0 {
-				n /= p // remove all factors p from n
-			}
-			res -= res / p // remove the current result's quotient of p
+	res := 0
+	// Check up to the square root of n for numbers coprime with n
+	for i := 1; i <= n; i++ {
+		g := gcd(i, n)
+		if g == 1 {
+			res++
 		}
-	}
-	if n > 1 {
-		res -= res / n // remove the current result's quotient of n
 	}
 	return res
 }
@@ -87,19 +141,6 @@ func polynomialMod(p []int, m int) []int {
 		if mod != 0 {
 			r[i] = mod
 		}
-	}
-	return r
-}
-
-// fastPower computes b^e fast
-func fastPower(b int, e int) int {
-	r := 1
-	for e > 0 {
-		if e%2 == 1 {
-			r *= b
-		}
-		b *= b
-		e >>= 1
 	}
 	return r
 }
@@ -223,14 +264,14 @@ func AKS(n int) bool {
 	xna := polynomialExpansion(n, 0)
 	xr1 := polynomialExpansion(r, 0)
 	xr1[0]--
-	_, remB, ok := pld(xna, xr1)
-	if !ok {
-		panic("error dividing polynomials")
-	}
 	for a := 1; a <= maxA; a++ {
 		xna[0] += a
 		xa := polynomialExpansion(n, a)
 		remA := polynomialModRemainder(xa, xr1, n)
+		_, remB, ok := pld(xna, xr1)
+		if !ok {
+			panic("error dividing polynomials")
+		}
 		longest := make([]int, len(remA))
 		if len(remB) > len(remA) {
 			longest = make([]int, len(remB))
